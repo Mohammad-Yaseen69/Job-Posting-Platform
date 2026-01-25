@@ -12,3 +12,93 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// schema.prisma
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model User {
+  id                     String           @id @unique @default(uuid())
+  name                   String?
+  email                  String           @unique
+  emailVerified          DateTime?
+  pfp                    String?
+  accounts               Account[]
+  sessions               Session[]
+  jobs                   Jobs[]
+  appliedJobApplications JobApplication[]
+  createdAt              DateTime         @default(now())
+}
+
+model Jobs {
+  id              String           @id @unique @default(uuid())
+  title           String
+  description     String
+  company         String
+  location        JobLocationType
+  jobType         String
+  address         String
+  salary          String?
+  postedAt        DateTime         @default(now())
+  postedBy        String
+  user            User             @relation(fields: [postedBy], references: [id])
+  jobApplications JobApplication[]
+}
+
+model JobApplication {
+  id              String            @id @unique @default(uuid())
+  jobId           String
+  applicantId     String
+  applicationDate DateTime          @default(now())
+  status          ApplicationStatus @default(PENDING)
+  job             Jobs              @relation(fields: [jobId], references: [id])
+  applicant       User              @relation(fields: [applicantId], references: [id])
+
+  @@unique([jobId, applicantId])
+}
+
+enum JobLocationType {
+  REMOTE
+  ONSITE
+  HYBRID
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWED
+  INTERVIEW_SCHEDULED
+  REJECTED
+  HIRED
+}
